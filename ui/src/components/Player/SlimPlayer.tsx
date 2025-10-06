@@ -19,11 +19,19 @@ const SlimPlayerFC: React.FC<T3kSlimPlayerProps> = ({
     loadAudio,
     loadIr,
     removeIr,
+    cleanup,
   } = useT3kPlayerContext();
 
   // State
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Setup unload effect to cleanup audio context
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, [cleanup]);
 
   // Setup play event listener
   useEffect(() => {
