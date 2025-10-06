@@ -32,6 +32,7 @@ const PlayerFC: React.FC<T3kPlayerProps> = ({
     removeIr,
     toggleBypass,
     connectVisualizerNode,
+    cleanup,
   } = useT3kPlayerContext();
 
   // Helper function to get default item
@@ -105,6 +106,13 @@ const PlayerFC: React.FC<T3kPlayerProps> = ({
       }
     }
   }, []);
+
+  // Setup unload effect to cleanup audio context
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, [cleanup]);
 
   // Setup play event listener
   useEffect(() => {

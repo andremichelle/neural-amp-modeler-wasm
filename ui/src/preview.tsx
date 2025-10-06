@@ -4,8 +4,6 @@ import { T3kPlayer } from './components/T3kPlayer';
 import { T3kPlayerContextProvider } from './context/T3kPlayerContext';
 import './index.css';
 import { PREVIEW_MODE } from './types';
-import { DEFAULT_INPUTS, DEFAULT_IRS, DEFAULT_MODELS } from './constants';
-import { SlimPlayer } from '.';
 
 const PreviewContent: React.FC = () => {
   return (
