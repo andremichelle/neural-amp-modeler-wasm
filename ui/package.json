@@ -1,6 +1,6 @@
 {
   "name": "neural-amp-modeler-wasm",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "description": "Neural Amp Modeler WebAssembly React Component",
   "type": "module",
   "main": "dist/index.js",

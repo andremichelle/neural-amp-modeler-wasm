@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { ReactNode, useRef } from 'react';
 import { PREVIEW_MODE } from '../../types';
 import { LogoSm } from '../ui/LogoSm';
 import { Play } from '../ui/Play';
@@ -8,10 +8,12 @@ import { ToggleSimple } from '../ui/ToggleSimple';
 
 interface PlayerSkeletonProps {
   previewMode: PREVIEW_MODE;
+  infoSlot?: ReactNode;
 }
 
 export const PlayerSkeleton: React.FC<PlayerSkeletonProps> = ({
   previewMode,
+  infoSlot,
 }) => {
   const visualizerRef = useRef<HTMLCanvasElement>(null);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
@@ -74,6 +76,7 @@ export const PlayerSkeleton: React.FC<PlayerSkeletonProps> = ({
             }}
           />
         </div>
+        {infoSlot && infoSlot}
       </div>
 
       {/* Settings */}

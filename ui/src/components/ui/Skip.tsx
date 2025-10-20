@@ -2,12 +2,13 @@ import React from 'react';
 
 interface SkipProps {
   opacity?: number;
+  size?: number;
 }
 
-export const Skip = ({ opacity = 0.6 }: SkipProps) => (
+export const Skip = ({ opacity = 0.6, size = 32 }: SkipProps) => (
   <svg
-    width='32'
-    height='32'
+    width={size}
+    height={size}
     viewBox='0 0 32 32'
     fill='none'
     xmlns='http://www.w3.org/2000/svg'
