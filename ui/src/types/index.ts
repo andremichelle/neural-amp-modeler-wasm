@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 export interface Model {
   name: string;
   url: string;
@@ -45,6 +47,7 @@ export interface T3kPlayerProps {
   onInputChange?: (input: Input) => void;
   onIrChange?: (ir: IR) => void;
   id?: string;
+  infoSlot?: ReactNode;
 }
 
 export interface T3kSlimPlayerProps extends T3kPlayerProps {
@@ -54,4 +57,13 @@ export interface T3kSlimPlayerProps extends T3kPlayerProps {
     input: Input;
   }>;
   size?: number;
+}
+
+export interface T3kAcordianPlayerProps extends T3kPlayerProps {
+  getData: () => Promise<{
+    models: NonEmptyArray<Model>;
+    irs: NonEmptyArray<IR>;
+    inputs: NonEmptyArray<Input>;
+  }>;
+  disabled?: boolean;
 }
