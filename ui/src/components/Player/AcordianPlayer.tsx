@@ -405,7 +405,7 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
   );
 
   return (
-    <div className={`bg-zinc-900 border border-t-0 border-zinc-700 text-white px-4 lg:px-8 pt-0 pb-0 rounded-xl w-full flex flex-col gap-0 md:gap-1 rounded-t-none ${expanded ? 'pb-4 lg:pb-8' : 'pb-0'}`}>
+    <div className={`bg-zinc-900 border border-t-0 border-zinc-700 text-white px-4 sm:px-6 pt-0 pb-0 rounded-xl w-full flex flex-col gap-0 md:gap-1 rounded-t-none ${expanded ? 'pb-4 lg:pb-8' : 'pb-0'}`}>
       {/* Player Controls */}
       <div className={`flex items-center gap-4 overflow-hidden ${disabled ? 'opacity-50 touch-none cursor-not-allowed' : ''}`}>
         <button
