@@ -56,6 +56,7 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
   const [models, setModels] = useState<Model[] | null>(null);
   const [inputs, setInputs] = useState<Input[] | null>(null);
   const [irs, setIrs] = useState<IR[] | null>(null);
+  const [bypassed, setBypassed] = useState(false);
 
   // Refs
   const visualizerRef = useRef<HTMLCanvasElement>(null);
@@ -240,6 +241,8 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
         }
 
         if (audioElement) await audioElement.play();
+        // Toggle bypass if needed
+        if (audioState.isBypassed !== bypassed) toggleBypass();
         setIsPlaying(true);
         if (id) {
           try {
@@ -273,6 +276,8 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
     loadIr,
     removeIr,
     onPlay,
+    toggleBypass,
+    bypassed,
   ]);
 
   const handleSkipToStart = useCallback(() => {
@@ -284,8 +289,12 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
   }, [getAudioNodes]);
 
   const handleBypassToggle = useCallback(() => {
-    toggleBypass();
-  }, [toggleBypass]);
+    const newBypassed = !bypassed;
+    setBypassed(newBypassed);
+    if (isPlaying && audioState.isBypassed !== newBypassed) {
+      toggleBypass();
+    }
+  }, [toggleBypass, bypassed, audioState, isPlaying]);
 
   const handleModelChange = useCallback(
     async (value: string | number) => {
@@ -293,14 +302,14 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
       if (model) {
         setSelectedModel(model);
         try {
-          if (audioState.isInitialized) await loadModel(model.url);
+          if (audioState.isInitialized && isPlaying) await loadModel(model.url);
           onModelChange?.(model);
         } catch (error) {
           console.error('Error loading model:', error);
         }
       }
     },
-    [models, loadModel, onModelChange, audioState.isInitialized]
+    [models, loadModel, onModelChange, audioState.isInitialized, isPlaying]
   );
 
   const handleInputChange = useCallback(
@@ -313,16 +322,18 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
       setSelectedInput(input);
 
       try {
-        if (
-          audioState.isInitialized &&
-          (!audioState.audioUrl || audioState.audioUrl !== input.url)
-        ) {
-          await loadAudio(input.url);
-        }
+        if (wasPlaying) {
+          if (
+            audioState.isInitialized &&
+            (!audioState.audioUrl || audioState.audioUrl !== input.url)
+          ) {
+            await loadAudio(input.url);
+          }
 
-        const audioElement = getAudioNodes().audioElement;
-        if (wasPlaying && audioElement) {
-          audioElement.play();
+          const audioElement = getAudioNodes().audioElement;
+          if (audioElement) {
+            audioElement.play();
+          }
         }
 
         onInputChange?.(input);
@@ -350,21 +361,23 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
       setSelectedIr(ir);
 
       try {
-        if (audioState.isInitialized && ir.url) {
-          await loadIr({
-            url: ir.url,
-            wetAmount: ir.mix,
-            gainAmount: ir.gain,
-          });
-        } else {
-          removeIr();
+        if (isPlaying) {
+          if (audioState.isInitialized && ir.url) {
+            await loadIr({
+              url: ir.url,
+              wetAmount: ir.mix,
+              gainAmount: ir.gain,
+            });
+          } else {
+            removeIr();
+          }
         }
         onIrChange?.(ir);
       } catch (error) {
         console.error('Error loading IR:', error);
       }
     },
-    [irs, loadIr, removeIr, onIrChange, audioState.isInitialized]
+    [irs, loadIr, removeIr, onIrChange, audioState.isInitialized, isPlaying]
   );
 
   const bypassedStyles = audioState.isBypassed
@@ -471,8 +484,9 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
             <ToggleSimple
               label=''
               onChange={handleBypassToggle}
-              isChecked={!audioState.isBypassed}
+              isChecked={!bypassed}
               ariaLabel='Bypass'
+              disabled={disabled}
             />
           </div>
         </div>
