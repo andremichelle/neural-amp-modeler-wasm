@@ -380,7 +380,7 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
     [irs, loadIr, removeIr, onIrChange, audioState.isInitialized, isPlaying]
   );
 
-  const bypassedStyles = audioState.isBypassed
+  const bypassedStyles = bypassed
     ? 'opacity-50 touch-none cursor-not-allowed grayscale'
     : '';
 
@@ -390,7 +390,7 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
       label='Model'
       onChange={handleModelChange}
       defaultOption={selectedModel?.url!}
-      disabled={audioState.isBypassed}
+      disabled={bypassed}
     />
   );
 
@@ -400,7 +400,7 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
       label='IR'
       onChange={handleIrChange}
       defaultOption={selectedIr?.url}
-      disabled={audioState.isBypassed}
+      disabled={bypassed}
     />
   );
 
@@ -498,7 +498,7 @@ const PlayerFC: React.FC<T3kAcordianPlayerProps> = ({
               label='Input'
               onChange={handleInputChange}
               defaultOption={selectedInput?.url}
-              disabled={audioState.isBypassed}
+              // disabled={audioState.isBypassed}
             />
           </div>
 

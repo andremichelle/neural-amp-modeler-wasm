@@ -448,7 +448,7 @@ const PlayerFC: React.FC<T3kPlayerProps> = ({
               label='Input'
               onChange={handleInputChange}
               defaultOption={selectedInput.url}
-              disabled={audioState.isBypassed}
+              // disabled={audioState.isBypassed}
             />
           </div>
 

@@ -23,6 +23,10 @@ const inputs = [
     url: "/inputs/Drivin' - Bass.wav",
   },
   {
+    name: "Fast Thrash - Guitar",
+    url: "/inputs/Fast Thrash - Guitar.wav",
+  },
+  {
     name: 'Fear - Guitar',
     url: '/inputs/Fear - Guitar.wav',
   },
@@ -33,6 +37,10 @@ const inputs = [
   {
     name: 'Garden - Bass',
     url: '/inputs/Garden - Bass.wav',
+  },
+  {
+    name: "Groove Thrash - Guitar",
+    url: "/inputs/Groove Thrash - Guitar.wav",
   },
   {
     name: 'Hammer Lead - Guitar',
@@ -85,6 +93,10 @@ const inputs = [
   {
     name: 'Power - Guitar',
     url: '/inputs/Power - Guitar.wav',
+  },
+  {
+    name: "Power Thrash - Guitar",
+    url: "/inputs/Power Thrash - Guitar.wav",
   },
   {
     name: 'Progression -  Guitar',
@@ -191,6 +203,10 @@ const models = [
   {
     name: 'Ampeg V-2',
     url: '/models/ampeg.nam',
+  },
+  {
+    name: "Boosted EVH 5153",
+    url: "/models/5153.nam",
   },
   {
     name: 'Roland JC-120',
