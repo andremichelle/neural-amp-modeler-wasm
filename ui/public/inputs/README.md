@@ -42,6 +42,9 @@ Thank you to everyone who has contributed input files to this project!
 - Groove Thrash - Guitar.wav
 - Power Thrash - Guitar.wav
 
+### [@2dor](https://www.tone3000.com/2dor)
+- Decapitated - Guitar.wav
+
 ---
 
 *Want to see your name here? Contribute your input files and help the community!*
