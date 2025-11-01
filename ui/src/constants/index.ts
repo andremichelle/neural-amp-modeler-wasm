@@ -15,6 +15,10 @@ const inputs = [
     url: '/inputs/Cream - Guitar.wav',
   },
   {
+    name: 'Decapitated - Guitar',
+    url: '/inputs/Decapitated - Guitar.wav',
+  },
+  {
     name: 'Downtown - Bass',
     url: '/inputs/Downtown - Bass.wav',
   },
