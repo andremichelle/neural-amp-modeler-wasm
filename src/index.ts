@@ -15,4 +15,6 @@ export type {
     CreateNamModule
 } from "./NamWasmModule.js"
 
+export { NamModel } from "./NamModel.js"
+
 export { default as createNamModule } from "./nam.js"
