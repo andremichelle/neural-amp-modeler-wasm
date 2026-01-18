@@ -1,20 +1,10 @@
 # Find all NAM (Neural Amp Modeler) source files recursively
 file(GLOB_RECURSE NAM_SOURCES ../NAM/*.cpp ../NAM/*.c ../NAM*.h)
 
-# Define the tools we want to build
-set(TOOLS t3k-wasm-module)
-
-# Create a custom target that depends on all tools
-add_custom_target(tools ALL
-	DEPENDS ${TOOLS})
-
 # Include necessary directories for compilation
-include_directories(tools ..)
-include_directories(tools ${NAM_DEPS_PATH}/eigen)  # Eigen library for matrix operations
-include_directories(tools ${NAM_DEPS_PATH}/nlohmann)  # JSON library
-
-# Create the t3k-wasm-module executable
-add_executable(t3k-wasm-module t3k-wasm-module.cpp ${NAM_SOURCES})
+include_directories(..)
+include_directories(${NAM_DEPS_PATH}/eigen)
+include_directories(${NAM_DEPS_PATH}/nlohmann)
 
 # Define compilation flags for Web Audio compatibility
 # Web Audio API only supports 32-bit float processing
@@ -25,49 +15,47 @@ add_definitions(-DEIGEN_STACK_ALLOCATION_LIMIT=0)
 # Group NAM source files in the IDE
 source_group(NAM ${CMAKE_CURRENT_SOURCE_DIR} FILES ${NAM_SOURCES})
 
-# Set C++17 as the required standard
-target_compile_features(${TOOLS} PUBLIC cxx_std_17)
+# =============================================================================
+# NAM Multi-Instance Module
+# =============================================================================
+# Minimal WASM module with multi-instance support for Web Audio integration.
 
-# Configure build properties for all tools
-set_target_properties(${TOOLS}
+add_executable(nam nam-multi-instance.cpp ${NAM_SOURCES})
+
+target_compile_features(nam PUBLIC cxx_std_17)
+
+set_target_properties(nam
 	PROPERTIES
-	CXX_VISIBILITY_PRESET hidden  # Hide symbols by default
-	INTERPROCEDURAL_OPTIMIZATION TRUE  # Enable link-time optimization
-	PREFIX ""  # Remove the 'lib' prefix from output files
+	CXX_VISIBILITY_PRESET hidden
+	INTERPROCEDURAL_OPTIMIZATION TRUE
+	PREFIX ""
+	COMPILE_FLAGS "-Os"
 )
 
-# Set specific compilation flags for t3k-wasm-module
-set_target_properties(t3k-wasm-module PROPERTIES COMPILE_FLAGS "-Os -pthread")
+# Configure Emscripten linker flags
+set_target_properties(nam PROPERTIES LINK_FLAGS "\
+-Os \
+-sEXPORTED_FUNCTIONS=_nam_createInstance,_nam_destroyInstance,_nam_getInstanceCount,_nam_loadModel,_nam_unloadModel,_nam_hasModel,_nam_process,_nam_setSampleRate,_nam_getSampleRate,_nam_setMaxBufferSize,_nam_getMaxBufferSize,_nam_getModelLoudness,_nam_hasModelLoudness,_nam_reset,_malloc,_free \
+-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,stringToUTF8,lengthBytesUTF8 \
+-sENVIRONMENT=web,worker \
+-sALLOW_MEMORY_GROWTH \
+-sINITIAL_MEMORY=64MB \
+-sMAXIMUM_MEMORY=512MB \
+-sMODULARIZE \
+-sEXPORT_ES6=1 \
+-sEXPORT_NAME=createNamModule \
+--no-entry \
+")
 
-# Configure Emscripten-specific linker flags for WebAssembly compilation
-# These flags enable:
-# - Web Audio Worklet support
-# - Web Workers
-# - Memory growth
-# - Async operations
-# - Threading support
-set_target_properties(t3k-wasm-module PROPERTIES LINK_FLAGS "-Os -sEXPORTED_FUNCTIONS=stringToUTF8,_malloc,_setDsp,_free -sENVIRONMENT=web,worker -sEXPORTED_RUNTIME_METHODS=ccall -sAUDIO_WORKLET -sWASM_WORKERS -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=1024MB -sTOTAL_STACK=512MB -sASYNCIFY -pthread")
-
-# TODO: Support JS Modules
-# set_target_properties(t3k-wasm-module PROPERTIES LINK_FLAGS "-Os -sEXPORTED_FUNCTIONS=stringToUTF8,_malloc,_setDsp,_free -sENVIRONMENT=web,worker -sEXPORTED_RUNTIME_METHODS=ccall -sAUDIO_WORKLET -sWASM_WORKERS -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=1024MB -sTOTAL_STACK=512MB -sASYNCIFY -sMODULARIZE -sASSERTIONS -sWEBAUDIO_DEBUG -sEXPORT_NAME=coreModule -sEXPORT_ES6=1")
+if (NOT MSVC)
+	target_compile_options(nam PRIVATE
+		-Wall -Wextra -Wpedantic -Wstrict-aliasing -Wunreachable-code -Weffc++ -Wno-unused-parameter
+		"$<$<CONFIG:DEBUG>:-Og;-ggdb;-Werror>"
+		"$<$<CONFIG:RELEASE>:-Os>"
+	)
+endif()
 
 # Windows-specific definitions
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-	target_compile_definitions(${TOOLS} PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
-endif()
-
-# Set compiler-specific flags
-if (MSVC)
-	# Microsoft Visual C++ specific flags
-	target_compile_options(${TOOLS} PRIVATE
-		"$<$<CONFIG:DEBUG>:/W4>"  # Warning level 4 in debug mode
-		"$<$<CONFIG:RELEASE>:/O2>"  # Optimization level 2 in release mode
-	)
-else()
-	# GCC/Clang specific flags
-	target_compile_options(${TOOLS} PRIVATE
-		-Wall -Wextra -Wpedantic -Wstrict-aliasing -Wunreachable-code -Weffc++ -Wno-unused-parameter
-		"$<$<CONFIG:DEBUG>:-Og;-ggdb;-Werror>"  # Debug flags with warnings as errors
-		"$<$<CONFIG:RELEASE>:-Os>"  # Size optimization in release mode
-	)
+	target_compile_definitions(nam PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()

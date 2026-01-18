@@ -1,31 +1,57 @@
 name: Build
 
 on:
-  [workflow_dispatch, pull_request]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
-  
+  EM_VERSION: 3.1.51
+
 jobs:
-  build-ubuntu:
-    name: Build Ubuntu
+  build:
+    name: Build WASM
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v3.3.0
-      with:
-        submodules: recursive
-    
-    - name: Build Tools
-      working-directory: ${{github.workspace}}/build
-      env:
-        CXX: clang++
-      run: |
-        cmake ..
-        cmake --build . -j4
-    
-    - name: Run tests
-      working-directory: ${{github.workspace}}
-      run: |
-        ./build/tools/run_tests
-        ./build/tools/benchmodel ./example_models/wavenet.nam
-        ./build/tools/benchmodel ./example_models/lstm.nam
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: ${{ env.EM_VERSION }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build WASM
+        run: npm run build:wasm
+
+      - name: Build TypeScript
+        run: npm run build:ts
+
+      - name: Verify build output
+        run: |
+          ls -la dist/
+          test -f dist/nam.wasm
+          test -f dist/nam.js
+          test -f dist/index.js
+          test -f dist/index.d.ts
+          test -f dist/NamWasmModule.js
+          test -f dist/NamWasmModule.d.ts
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

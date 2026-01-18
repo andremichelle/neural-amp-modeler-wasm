@@ -1,222 +1,247 @@
-# Neural Amp Modeler Wasm
+# @andremichelle/nam-wasm
 
-[![npm version](https://img.shields.io/npm/v/neural-amp-modeler-wasm.svg)](https://www.npmjs.com/package/neural-amp-modeler-wasm)
+Neural Amp Modeler WASM with multi-instance support for Web Audio integration.
 
-This is a [TONE3000](https://tone3000.com) fork of [Steve Atkinson's Neural Amp Modeler Core](https://github.com/sdatkinson/NeuralAmpModelerCore) DSP library, specifically adapted to run Neural Amp Modeler inference in web browsers using WebAssembly. This enables real-time audio modeling directly in the browser without requiring native plugins.
+Based on [Steven Atkinson's NeuralAmpModelerCore](https://github.com/sdatkinson/NeuralAmpModelerCore) and the [TONE3000 WASM port](https://github.com/tone-3000/neural-amp-modeler-wasm).
 
-The original Neural Amp Modeler Core is a C++ DSP library for NAM plugins. This fork extends its capabilities to the web platform, allowing you to run Neural Amp Modeler models in any modern web browser.
+## Features
 
-![screenshot](https://raw.githubusercontent.com/tone-3000/neural-amp-modeler-wasm/refs/heads/main/ui/public/screenshot.png)
+- **Multi-instance support** - Run multiple independent NAM models simultaneously
+- **Optimized for AudioWorklets** - Minimal API designed for real-time audio processing
+- **TypeScript support** - Full type definitions included
+- **Small footprint** - ~200KB WASM binary
 
-## Testing
-A workflow for testing the library is provided in `.github/workflows/build.yml`.
-You should be able to run it locally to test if you'd like.
-
-## Building
-Before building the project, you need to initialize the required submodules:
+## Installation
 
 ```bash
+npm install @andremichelle/nam-wasm
+```
+
+## Usage
+
+### Basic Usage with TypeScript Wrapper
+
+```typescript
+import { createNamModule, NamWasmModule } from "@andremichelle/nam-wasm"
+
+// Initialize the module
+const emscriptenModule = await createNamModule()
+const nam = NamWasmModule.fromModule(emscriptenModule)
+
+// Set the sample rate (must match your AudioContext)
+nam.setSampleRate(48000)
+
+// Create an instance and load a model
+const instanceId = nam.createInstance()
+const modelJson = await fetch("model.nam").then(r => r.text())
+const success = nam.loadModel(instanceId, modelJson)
+
+// Process audio (in your AudioWorklet's process method)
+nam.process(instanceId, inputBuffer, outputBuffer)
+
+// Clean up when done
+nam.destroyInstance(instanceId)
+nam.dispose()
+```
+
+### AudioWorklet Integration
+
+```typescript
+// processor.ts - AudioWorklet processor
+import { createNamModule, NamWasmModule } from "@andremichelle/nam-wasm"
+
+class NamProcessor extends AudioWorkletProcessor {
+    private nam: NamWasmModule | null = null
+    private instanceId: number = -1
+
+    constructor() {
+        super()
+        this.init()
+        this.port.onmessage = (e) => this.handleMessage(e.data)
+    }
+
+    private async init() {
+        const module = await createNamModule()
+        this.nam = NamWasmModule.fromModule(module)
+        this.nam.setSampleRate(sampleRate)
+        this.instanceId = this.nam.createInstance()
+        this.port.postMessage({ type: "ready" })
+    }
+
+    private handleMessage(data: any) {
+        if (data.type === "loadModel" && this.nam) {
+            const success = this.nam.loadModel(this.instanceId, data.modelJson)
+            this.port.postMessage({ type: "modelLoaded", success })
+        }
+    }
+
+    process(inputs: Float32Array[][], outputs: Float32Array[][]) {
+        if (!this.nam || !this.nam.hasModel(this.instanceId)) {
+            return true
+        }
+
+        const input = inputs[0][0]
+        const output = outputs[0][0]
+
+        if (input && output) {
+            this.nam.process(this.instanceId, input, output)
+        }
+
+        return true
+    }
+}
+
+registerProcessor("nam-processor", NamProcessor)
+```
+
+### Multiple Instances
+
+```typescript
+// Create multiple independent instances
+const instance1 = nam.createInstance()
+const instance2 = nam.createInstance()
+
+// Load different models
+nam.loadModel(instance1, cleanAmpJson)
+nam.loadModel(instance2, distortedAmpJson)
+
+// Process independently
+nam.process(instance1, guitar1Input, guitar1Output)
+nam.process(instance2, guitar2Input, guitar2Output)
+
+// Check instance count
+console.log(nam.getInstanceCount()) // 2
+```
+
+## API Reference
+
+### NamWasmModule
+
+#### Static Methods
+
+| Method | Description |
+|--------|-------------|
+| `fromModule(module, bufferSize?)` | Create from an Emscripten module instance |
+| `create(createModule, bufferSize?)` | Create from module factory function |
+
+#### Instance Management
+
+| Method | Description |
+|--------|-------------|
+| `createInstance()` | Create a new NAM instance, returns instance ID |
+| `destroyInstance(id)` | Destroy an instance and free resources |
+| `getInstanceCount()` | Get number of active instances |
+
+#### Model Management
+
+| Method | Description |
+|--------|-------------|
+| `loadModel(id, json)` | Load a .nam model (JSON string), returns success |
+| `unloadModel(id)` | Unload model from instance |
+| `hasModel(id)` | Check if instance has a model loaded |
+| `getModelLoudness(id)` | Get model loudness in dB (if available) |
+| `hasModelLoudness(id)` | Check if model has loudness metadata |
+
+#### Audio Processing
+
+| Method | Description |
+|--------|-------------|
+| `process(id, input, output)` | Process audio through instance |
+| `processInPlace(id, buffer)` | Process audio in-place |
+| `reset(id)` | Reset instance state (call on transport stop) |
+
+#### Configuration
+
+| Method | Description |
+|--------|-------------|
+| `setSampleRate(rate)` | Set sample rate for all instances |
+| `getSampleRate()` | Get current sample rate |
+| `setMaxBufferSize(size)` | Set max buffer size (default: 128) |
+| `getMaxBufferSize()` | Get current max buffer size |
+
+#### Cleanup
+
+| Method | Description |
+|--------|-------------|
+| `dispose()` | Free all allocated memory |
+
+## Building from Source
+
+### Prerequisites
+
+1. **Node.js** (v16+)
+2. **Emscripten** (v3.1.41+)
+
+### Install Emscripten
+
+```bash
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+./emsdk install 3.1.41
+./emsdk activate 3.1.41
+source ./emsdk_env.sh
+```
+
+### Build
+
+```bash
+# Clone with submodules
+git clone --recursive https://github.com/andremichelle/nam-wasm.git
+cd nam-wasm
+
+# Or init submodules if already cloned
 git submodule update --init --recursive
+
+# Install dependencies
+npm install
+
+# Build WASM and TypeScript
+npm run build
+
+# Or build separately
+npm run build:wasm  # Build WASM only
+npm run build:ts    # Build TypeScript only
 ```
 
-This will fetch and initialize the Eigen library and other dependencies required for building.
+Output files are in `dist/`:
+- `nam.wasm` - WebAssembly binary (~200KB)
+- `nam.js` - Emscripten ES6 module wrapper
+- `index.js` / `index.d.ts` - Package exports
+- `NamWasmModule.js` / `NamWasmModule.d.ts` - TypeScript API
 
-## WebAssembly (WASM) Build
-To build the WebAssembly version of the library, you'll need to install Emscripten and Node.js first:
+## Performance
 
-1. Install Node.js and npm (which includes npx):
-   ```bash
-   # On macOS with Homebrew
-   brew install node
+| Model Type | CPU Usage* | Quality |
+|------------|-----------|---------|
+| Standard | ~8% | Full fidelity |
+| Lite | ~5-6% | Nearly indistinguishable |
+| Feather | ~4-5% | Great for live/mixing |
+| Nano | ~3% | Some loss in detail |
 
-   # On Ubuntu/Debian
-   curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-   sudo apt-get install -y nodejs
+*Per instance on i7 @ 4.2GHz
 
-   # On Windows
-   # Download and install from https://nodejs.org/
-   ```
+With Lite/Feather models, 6-8 simultaneous instances run comfortably.
 
-2. Install Emscripten:
-   ```bash
-   # Clone the emsdk repository
-   git clone https://github.com/emscripten-core/emsdk.git
-   cd emsdk
-   
-   # Install and activate Emscripten
-   ./emsdk install 3.1.41
-   ./emsdk activate 3.1.41
-   
-   # Set up the environment variables
-   source ./emsdk_env.sh
+## License
 
-   # Add Emscripten to your PATH permanently
-   # For bash/zsh, add this line to your ~/.bashrc or ~/.zshrc:
-   echo 'source "$HOME/emsdk/emsdk_env.sh"' >> ~/.bashrc  # or ~/.zshrc
-   # Then reload your shell configuration:
-   source ~/.bashrc  # or source ~/.zshrc
-   ```
+MIT License
 
-3. Build the WASM version:
-   ```bash
-   cd wasm
-   # Run the WASM build script
-   ./build.bash
-   ```
+### Third-Party Licenses
 
-The build script will create the WebAssembly files in the `build/wasm` directory. The main output files will be:
-- `t3k-wasm-module.js` - JavaScript wrapper
-- `t3k-wasm-module.wasm` - WebAssembly binary
-- `t3k-wasm-module.worker.js` - Web Worker implementation for parallel processing
-- `t3k-wasm-module.aw.js` - Audio Worklet implementation for real-time audio processing
-- `t3k-wasm-module.ww.js` - Web Worker wrapper for thread management
+```
+Neural Amp Modeler Core
+Copyright 2023-2025 Steven Atkinson
+MIT License
+https://github.com/sdatkinson/NeuralAmpModelerCore
 
-## UI Development
-The project includes a React-based UI for testing and demonstrating the WebAssembly implementation. To build and run the UI:
-
-1. First, ensure you have built the WebAssembly module as described above.
-
-2. Install UI dependencies:
-   ```bash
-   cd ui
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm start
-   ```
-   This will:
-   - Copy the WebAssembly files to the public directory
-   - Start a development server with hot reloading
-   - Open the UI in your default browser at `http://localhost:3000`
-
-4. To build the UI for production:
-   ```bash
-   npm run build
-   ```
-   This will create a production build in the `ui/dist` directory.
-
-## Using the T3kPlayer Component
-The project exports a React component that can be used in other projects. To use it:
-
-1. Install the package:
-   ```bash
-   npm install neural-amp-modeler-wasm
-   ```
-
-2. Import and use the component in your React application:
-   ```tsx
-   import { T3kPlayer, T3kPlayerContextProvider } from 'neural-amp-modeler-wasm';
-   import 'neural-amp-modeler-wasm/dist/styles.css';
-
-   function App() {
-     return (
-       <T3kPlayerContextProvider>
-         <T3kPlayer
-           models={[
-             {
-               name: "Vox AC10",
-               url: "https://raw.githubusercontent.com/tone-3000/neural-amp-modeler-wasm/refs/heads/main/ui/public/models/ac10.nam",
-               default: true
-             },
-             {
-               name: "Fender Deluxe Reverb",
-               url: "https://raw.githubusercontent.com/tone-3000/neural-amp-modeler-wasm/refs/heads/main/ui/public/models/deluxe.nam"
-             }
-           ]}
-           irs={[
-             {
-               name: "Celestion",
-               url: "https://raw.githubusercontent.com/tone-3000/neural-amp-modeler-wasm/refs/heads/main/ui/public/irs/celestion.wav",
-               default: true
-             },
-             {
-               name: "EMT 140 Plate Reverb",
-               url: "https://raw.githubusercontent.com/tone-3000/neural-amp-modeler-wasm/refs/heads/main/ui/public/irs/plate.wav",
-               mix: 0.5,  // Optional: wet/dry mix (0-1)
-               gain: 1.0  // Optional: gain adjustment
-             }
-           ]}
-           inputs={[
-             {
-               name: "Mayer - Guitar",
-               url: "https://raw.githubusercontent.com/tone-3000/neural-amp-modeler-wasm/refs/heads/main/ui/public/inputs/Mayer%20-%20Guitar.wav",
-               default: true
-             },
-             {
-               name: "Downtown - Bass",
-               url: "https://raw.githubusercontent.com/tone-3000/neural-amp-modeler-wasm/refs/heads/main/ui/public/inputs/Downtown%20-%20Bass.wav"
-             }
-           ]}
-         />
-       </T3kPlayerContextProvider>
-     );
-   }
-   ```
-
-The component must be wrapped in a `T3kPlayerContextProvider` which handles the WebAssembly module initialization and audio context setup. The provider manages the audio processing pipeline and ensures proper cleanup of resources.
-
-## Component Props
-
-The `T3kPlayer` component accepts the following props:
-
-### models
-Array of model objects, each containing:
-- `name`: Display name for the model
-- `url`: URL to the NAM model file
-- `default`: Optional boolean to mark as default selection
-
-### irs
-Array of IR (Impulse Response) objects, each containing:
-- `name`: Display name for the IR
-- `url`: URL to the IR file (use empty string for "None")
-- `mix`: Optional wet/dry mix ratio (0-1)
-- `gain`: Optional gain adjustment
-- `default`: Optional boolean to mark as default selection
-
-### inputs
-Array of input audio objects, each containing:
-- `name`: Display name for the input
-- `url`: URL to the audio file
-- `default`: Optional boolean to mark as default selection
-
-### previewMode
-Optional enum value to control the preview mode:
-- `PREVIEW_MODE.MODEL`: Show model selection interface (default)
-- `PREVIEW_MODE.IR`: Show IR selection interface
-
-### isLoading
-Optional boolean to show loading state
-
-### Event Callbacks
-
-#### onPlay
-Callback function triggered when audio playback starts:
-```tsx
-onPlay?: ({ model, ir, input }: { 
-  model: Model, 
-  ir: IR, 
-  input: Input 
-}) => void;
+Neural Amp Modeler WASM (original port)
+Copyright 2023 Steven Atkinson
+MIT License
+https://github.com/tone-3000/neural-amp-modeler-wasm
 ```
 
-#### onModelChange
-Callback function triggered when model selection changes:
-```tsx
-onModelChange?: (model: Model) => void;
-```
+## Resources
 
-#### onInputChange
-Callback function triggered when input selection changes:
-```tsx
-onInputChange?: (input: Input) => void;
-```
-
-#### onIrChange
-Callback function triggered when IR selection changes:
-```tsx
-onIrChange?: (ir: IR) => void;
-
-## Sharp edges
-This library uses [Eigen](http://eigen.tuxfamily.org) to do the linear algebra routines that its neural networks require. Since these models hold their parameters as eigen object members, there is a risk with certain compilers and compiler optimizations that their memory is not aligned properly. This can be worked around by providing two preprocessor macros: `EIGEN_MAX_ALIGN_BYTES 0` and `EIGEN_DONT_VECTORIZE`, though this will probably harm performance. See [Structs Having Eigen Members](http://eigen.tuxfamily.org/dox-3.2/group__TopicStructHavingEigenMembers.html) for more information. This is being tracked as [Issue 67](https://github.com/sdatkinson/NeuralAmpModelerCore/issues/67).
+- [NAM Model Library (ToneHunt)](https://tonehunt.org/)
+- [TONE3000 Models](https://www.tone3000.com/)
+- [Understanding NAM Types](https://www.tone3000.com/blog/understanding-nam-types)

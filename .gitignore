@@ -33,3 +33,9 @@
 
 
 .DS_Store
+
+# Node.js
+node_modules/
+
+# Build output
+dist/

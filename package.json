@@ -1,0 +1,46 @@
+{
+  "name": "@andremichelle/nam-wasm",
+  "version": "1.0.0",
+  "license": "MIT",
+  "description": "Neural Amp Modeler WASM with multi-instance support for Web Audio integration",
+  "author": "Andre Michelle",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./nam.wasm": "./dist/nam.wasm",
+    "./nam.js": "./dist/nam.js"
+  },
+  "scripts": {
+    "build:wasm": "./wasm/build-nam.bash",
+    "build:ts": "tsc && cp src/nam.d.ts dist/",
+    "build": "npm run build:wasm && npm run build:ts",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andremichelle/nam-wasm"
+  },
+  "keywords": [
+    "neural-amp-modeler",
+    "nam",
+    "guitar-amp",
+    "amp-simulation",
+    "webassembly",
+    "wasm",
+    "web-audio",
+    "audio-worklet",
+    "dsp"
+  ],
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
