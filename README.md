@@ -1,4 +1,4 @@
-# @andremichelle/nam-wasm
+# @opendaw/nam-wasm
 
 Neural Amp Modeler WASM with multi-instance support for Web Audio integration.
 
@@ -14,7 +14,7 @@ Based on [Steven Atkinson's NeuralAmpModelerCore](https://github.com/sdatkinson/
 ## Installation
 
 ```bash
-npm install @andremichelle/nam-wasm
+npm install @opendaw/nam-wasm
 ```
 
 ## Usage
@@ -22,7 +22,7 @@ npm install @andremichelle/nam-wasm
 ### Basic Usage with TypeScript Wrapper
 
 ```typescript
-import { createNamModule, NamWasmModule } from "@andremichelle/nam-wasm"
+import { createNamModule, NamWasmModule } from "@opendaw/nam-wasm"
 
 // Initialize the module
 const emscriptenModule = await createNamModule()
@@ -48,7 +48,7 @@ nam.dispose()
 
 ```typescript
 // processor.ts - AudioWorklet processor
-import { createNamModule, NamWasmModule } from "@andremichelle/nam-wasm"
+import { createNamModule, NamWasmModule } from "@opendaw/nam-wasm"
 
 class NamProcessor extends AudioWorkletProcessor {
     private nam: NamWasmModule | null = null
