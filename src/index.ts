@@ -16,5 +16,16 @@ export type {
 } from "./NamWasmModule.js"
 
 export { NamModel } from "./NamModel.js"
+export type {
+    GearType,
+    ToneType,
+    NamModelDate,
+    NamModelTrainingData,
+    NamModelTrainingSettings,
+    NamModelTraining,
+    NamModelMetadata,
+    NamModelLayerConfig,
+    NamModelConfig
+} from "./NamModel.js"
 
 export { default as createNamModule } from "./nam.js"
