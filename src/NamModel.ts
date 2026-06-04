@@ -92,7 +92,12 @@ export interface NamModelLayerConfig {
 }
 
 export interface NamModelConfig {
-    layers: NamModelLayerConfig[]
+    /**
+     * WaveNet layer stack. Only present for the "WaveNet" architecture; other
+     * architectures (LSTM, ConvNet, …) describe their config with different keys
+     * and omit `layers` entirely, so this is undefined for them.
+     */
+    layers?: NamModelLayerConfig[]
 }
 
 export interface NamModel {
